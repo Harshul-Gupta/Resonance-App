@@ -1,0 +1,110 @@
+package com.hars.songService.Controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import com.hars.songService.Event.ArtistEvent;
+import com.hars.songService.Repository.ArtistLookup;
+import com.hars.songService.Repository.ArtistLookupRepository;
+import com.hars.songService.Repository.PresignedUploadRequest;
+import com.hars.songService.Repository.PresignedUploadResponse;
+import com.hars.songService.Repository.Song;
+import com.hars.songService.Repository.SongCreationDTO;
+import com.hars.songService.Service.S3SongService;
+import com.hars.songService.Service.SongService;
+
+import jakarta.validation.Valid;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
+
+@RestController
+@RequestMapping("/api/songs")
+public class SongController {
+	
+	private final SongService songService;
+	private final S3SongService s3SongService;
+	
+	@Autowired
+	ArtistLookupRepository artistLookupRepository;
+	
+	@Autowired
+	private WebClient webClient;
+
+	SongController(SongService songService, S3SongService s3SongService) {
+		this.songService = songService;
+		this.s3SongService = s3SongService;
+	}
+
+	@GetMapping("/{id}")
+	public ResponseEntity<Song> getSongById(@PathVariable(required = true) Long id) throws RuntimeException{
+		
+		Song song = songService.findByIdSong(id);
+		return new ResponseEntity<>(song, HttpStatus.OK);
+	}
+	
+	@GetMapping("artist/{mongoId}")
+	public ResponseEntity<List<Song>> getAllSongsByArtistId(@PathVariable(required = true) String mongoId) throws RuntimeException{
+		List<Song> songsList = songService.findByArtistId(mongoId);
+		
+		return new ResponseEntity<>(songsList, HttpStatus.OK);
+	}
+	
+	@PostMapping("/presigned-url")
+	public ResponseEntity<PresignedUploadResponse> getPreSignedUrl(@RequestBody PresignedUploadRequest request){
+		PresignedUploadResponse response = s3SongService.generatePresignedUploadUrl(request.fileName(), request.contentType());
+		return new ResponseEntity<>(response, HttpStatus.OK);	
+	}
+	
+	@PostMapping
+	public ResponseEntity<Song> addSong(@Valid @RequestBody SongCreationDTO song){
+		System.out.println("Duration: " + song.getDuration());
+		System.out.println("Name: " + song.getSongName());
+		Song uploadedSong = songService.addSong(song);
+		return new ResponseEntity<>(uploadedSong, HttpStatus.CREATED);	
+	}
+	
+	@DeleteMapping("/{id}")
+	public ResponseEntity<String> deleteSongById(@PathVariable(required = true) Long id) throws RuntimeException
+	{
+		songService.removeSong(id);
+		return ResponseEntity.ok("Song removed successfully");
+	}
+	
+	@PostMapping("/sync/artists")
+	public ResponseEntity<String> syncExistingArtists() {
+		String artistServiceUrl = "http://localhost:8082/api/artists/artistEvents";
+	
+		List<ArtistEvent> existingArtists = webClient.get()
+												.uri(artistServiceUrl)
+												.retrieve()
+												.bodyToFlux(ArtistEvent.class)
+												.collectList()
+												.block();
+												
+		for(ArtistEvent artist : existingArtists)
+		{
+			if(!artistLookupRepository.existsById(artist.getMongoId()))
+			{
+				ArtistLookup lookup = ArtistLookup.builder()
+										.artistMongoId(artist.getMongoId())
+										.artistName(artist.getArtistName())
+										.build();
+				artistLookupRepository.save(lookup);
+			}
+		}
+		return new ResponseEntity<String>("Synced existing artists successfully", HttpStatus.CREATED);
+	}
+
+}
