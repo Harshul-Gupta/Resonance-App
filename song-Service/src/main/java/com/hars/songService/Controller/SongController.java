@@ -1,19 +1,19 @@
 package com.hars.songService.Controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.hars.songService.Event.ArtistEvent;
@@ -27,7 +27,6 @@ import com.hars.songService.Service.S3SongService;
 import com.hars.songService.Service.SongService;
 
 import jakarta.validation.Valid;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 
 @RestController
 @RequestMapping("/api/songs")
@@ -69,10 +68,14 @@ public class SongController {
 	
 	@PostMapping
 	public ResponseEntity<Song> addSong(@Valid @RequestBody SongCreationDTO song){
-		System.out.println("Duration: " + song.getDuration());
-		System.out.println("Name: " + song.getSongName());
 		Song uploadedSong = songService.addSong(song);
 		return new ResponseEntity<>(uploadedSong, HttpStatus.CREATED);	
+	}
+	
+	@PatchMapping("/{id}")
+	public ResponseEntity<String> updateSong(@PathVariable(required = true) Long id, @RequestBody Map<String, Object> updates){ 
+		songService.updateSong(id, updates);
+		return ResponseEntity.ok("Song Updated successfully");
 	}
 	
 	@DeleteMapping("/{id}")
@@ -82,6 +85,7 @@ public class SongController {
 		return ResponseEntity.ok("Song removed successfully");
 	}
 	
+	//Only used for initial sync of artists when artists are populated in back-end directly 
 	@PostMapping("/sync/artists")
 	public ResponseEntity<String> syncExistingArtists() {
 		String artistServiceUrl = "http://localhost:8082/api/artists/artistEvents";

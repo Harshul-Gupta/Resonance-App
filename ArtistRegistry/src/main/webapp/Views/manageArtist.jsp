@@ -317,7 +317,6 @@
 		}
 
 		function goToEditSongPage(song) {
-			// No edit-song endpoint yet — wire this up once the backend supports it.
 			if (!currentArtistId) return;
 			window.location.href = CTX + '/artist-details/' + currentArtistId + '/edit-song/' + song.id;
 		}

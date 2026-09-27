@@ -1353,12 +1353,6 @@
 													</c:if>
 												</h1>
 											</div>
-											<div class="result-meta">
-												<div class="result-count-badge">
-													<span>${fn:length(artists.content)}</span>
-													artist${fn:length(artists.content) ne 1 ? 's' : ''} found
-												</div>
-											</div>
 										</div>
 									</header>
 

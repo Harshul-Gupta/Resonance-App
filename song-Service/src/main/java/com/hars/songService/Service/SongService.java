@@ -3,6 +3,7 @@ package com.hars.songService.Service;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.kafka.common.errors.ResourceNotFoundException;
@@ -10,6 +11,9 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.hars.songService.Repository.ArtistLookup;
 import com.hars.songService.Repository.ArtistLookupRepository;
 import com.hars.songService.Repository.Song;
@@ -26,11 +30,13 @@ public class SongService {
 	private final SongRepository songRepository;
 	private final ArtistLookupRepository artistLookupRepo;
 	private final S3SongService s3SongService;
+	private final ObjectMapper objectMapper;
 
-	SongService(SongRepository songRepository, ArtistLookupRepository artistLookupRepo, S3SongService s3SongService) {
+	SongService(SongRepository songRepository, ArtistLookupRepository artistLookupRepo, S3SongService s3SongService, ObjectMapper objectMapper) {
 		this.songRepository = songRepository;
 		this.artistLookupRepo = artistLookupRepo;
 		this.s3SongService = s3SongService;
+		this.objectMapper = objectMapper;
 	}
 
 	public Song findByIdSong(Long id) throws RuntimeException{
@@ -47,9 +53,10 @@ public class SongService {
 	@Transactional
 	public Song addSong(SongCreationDTO song) {
 		Set<String> artistIds = song.getArtistIds();
-		//System.out.println("Received artistIds: " + song.getArtistIds());
+
 		if(artistIds==null || artistIds.isEmpty())
 			throw new BadRequestException("A song must be associated with atleast one artist");
+		
 		List<ArtistLookup> ArtistsFound = new ArrayList<>();
 		ArtistsFound = artistLookupRepo.findAllById(artistIds);
 		if(ArtistsFound.size()!=artistIds.size())
@@ -112,5 +119,40 @@ public class SongService {
 				}
 			}
 		}
+	}
+
+	@Transactional
+	public void updateSong(Long id, Map<String, Object> updates) {
+		Song existingSong = songRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Song not found"));
+
+		updates.forEach((K, V)-> {
+			switch (K) {
+			case "songName" -> existingSong.setSongName(V.toString());
+			case "duration" -> existingSong.setDuration(objectMapper.convertValue(V, Integer.class));
+			case "albumName" -> existingSong.setAlbumName(V.toString());
+			case "artists" -> {
+				Set<String> artistIds = objectMapper.convertValue(V, new TypeReference<Set<String>>(){});
+				List<ArtistLookup> ArtistsFound = artistLookupRepo.findAllById(artistIds);
+				if(ArtistsFound.size()!=artistIds.size())
+					throw new ResourceNotFoundException("One or more artists not found");
+				existingSong.setArtists(new HashSet<>(ArtistsFound));
+			}
+			case "s3Url" -> {
+				String s3Url = existingSong.getS3URL();
+				if(s3Url!=null) {
+					try {
+					s3SongService.deleteSong(s3Url);
+					log.info("Deleted " + existingSong.getSongName() + " from S3");
+					}
+					catch (Exception e) {
+						log.error("Failed to delete underlying file: " + s3Url+ " from cloud "+ e.getMessage());	
+					}
+				}
+				existingSong.setS3URL(V.toString());
+			}
+			}
+		});
+		
+		songRepository.save(existingSong);
 	}
 }

@@ -102,6 +102,15 @@ public class ArtistController {
     	model.addAttribute("artistId", artistId);
     	return "addSong";
     }
+    
+    @GetMapping("artist-details/{artistId}/edit-song/{songId}")
+    public String editSong(@PathVariable String artistId, @PathVariable String songId, Model model) {
+    	Artist artist = artistRepo.findById(artistId).orElse(null);
+    	model.addAttribute("artist", artist);
+    	model.addAttribute("songId", songId);
+    	model.addAttribute("artistId", artistId);
+    	return "editSong";
+    }
 
     @GetMapping("/add")
     public String showAddArtistForm() {
