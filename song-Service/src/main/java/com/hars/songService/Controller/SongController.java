@@ -88,7 +88,7 @@ public class SongController {
 	//Only used for initial sync of artists when artists are populated in back-end directly 
 	@PostMapping("/sync/artists")
 	public ResponseEntity<String> syncExistingArtists() {
-		String artistServiceUrl = "http://localhost:8082/api/artists/artistEvents";
+		String artistServiceUrl = "http://ArtistRegistry/api/artists/artistEvents";
 	
 		List<ArtistEvent> existingArtists = webClient.get()
 												.uri(artistServiceUrl)
