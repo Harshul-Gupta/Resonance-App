@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                 allowedOrigins: "${FRONTEND_URL:http://localhost:8082}"
+                 allowedMethods: "*"
+                 allowedHeaders: "*"
+                 allow-credentials: false
+          routes:
+            - id: ArtistRegistry
+              uri: lb://ArtistRegistry
+              predicates:
+                - Path=/api/artists/**
+            - id: song-service
+              uri: lb://song-service
+              predicates:
+                - Path=/api/songs/**
+            - id: discovery-server
+              uri: http://localhost:8761
+              predicates:
+              - Path=/eureka/web
+              filters:
+              - SetPath=/
+              
+eureka:
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: TRACE
