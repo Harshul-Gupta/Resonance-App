@@ -7,7 +7,7 @@ RUN mvn clean package -DskipTests
 
 # Stage 2: Ultra-lightweight runtime environment
 FROM eclipse-temurin:25-jre-alpine
-WORKDIR /resonance
-COPY --from=build /resonance/target/*.war Resonance.war
+WORKDIR /app
+COPY --from=build /resonance/target/*.jar Resonance.jar
 EXPOSE 8080 8761 9092
-ENTRYPOINT [ "java", "-jar", "Resonance.war"]
+ENTRYPOINT [ "java", "-jar", "Resonance.jar"]

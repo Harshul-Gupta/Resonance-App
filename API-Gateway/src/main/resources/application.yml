@@ -22,18 +22,26 @@ spring:
               predicates:
                 - Path=/api/songs/**
             - id: discovery-server
-              uri: http://localhost:8761
+              uri: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/} 
               predicates:
               - Path=/eureka/web
               filters:
               - SetPath=/
+            - id: Frontend
+              uri: lb://ArtistRegistry
+              predicates:
+                - Path=/**
+              filters:
+              - PreserveHostHeader
+          x-forwarded:
+            enabled: true
               
 eureka:
   client:
     fetch-registry: true
     register-with-eureka: true
     service-url:
-      defaultZone: http://localhost:8761/eureka
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/} 
 
 logging:
   level:

@@ -64,14 +64,14 @@ public class WebSecurityConfig{
 			.csrf(csrf -> csrf.disable())
 			.authorizeHttpRequests(auth -> auth
 					.dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.INCLUDE, DispatcherType.ERROR).permitAll()
-					.requestMatchers("/login", 
+					.requestMatchers("/login",
 							"/WEB_INF/jsp/**",
 							"/register",
 							"/api/artists/user",
 							"/api/artists/artistEvents",
 							"/error",
-						    "/jsp/**", 
-						    "/images/**", 
+						    "/jsp/**",
+						    "/images/**",
 						    "/favicon.ico").permitAll()
 					.anyRequest().authenticated()
 					)
