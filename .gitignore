@@ -1,4 +1,5 @@
 docker-compose.yml
+.env
 # Compiled class file
 *.class
 

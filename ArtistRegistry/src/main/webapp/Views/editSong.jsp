@@ -591,7 +591,7 @@
 		const SONG_ID = '<c:out value="${songId}"/>';
 
 		/* songService lives on its own origin — not behind this app's context path */
-		const SONG_SERVICE_BASE = 'http://localhost:8080/api/songs';
+		const SONG_SERVICE_BASE = '/api/songs';
 
 		const form = document.getElementById('edit-song-form');
 		const formSkeleton = document.getElementById('form-skeleton');

@@ -46,9 +46,10 @@ public class Song {
 	private int duration;
 	
 //	@NotBlank(message = "Release year can't be blank")
-//	private Date releaseDate;
-//	
+//	private Date releaseDate;	
 //	private int streamCount;
+	
+//	private String imageURL;
 	
 	@NotBlank(message = "S3 URL is required")
 	private String s3URL;

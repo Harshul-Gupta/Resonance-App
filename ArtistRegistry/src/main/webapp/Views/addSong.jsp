@@ -886,7 +886,7 @@
 				setBusy(true, 'Requesting upload URL…');
 				setProgress(5, 'Requesting a secure upload link…');
 
-				const presignRes = await fetch('http://localhost:8080/api/songs/presigned-url', {
+				const presignRes = await fetch('/api/songs/presigned-url', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ fileName: file.name, contentType: file.type || 'audio/mpeg' })
@@ -917,7 +917,7 @@
 					artistIds: [ARTIST_ID, ...collaboratorIds]
 				};
 
-				const songRes = await fetch('http://localhost:8080/api/songs', {
+				const songRes = await fetch('/api/songs', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify(songPayload)

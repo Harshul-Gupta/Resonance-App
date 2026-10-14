@@ -2,6 +2,7 @@ package com.hars.ArtistRegistry.Configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
@@ -15,6 +16,8 @@ import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 import com.hars.ArtistRegistry.Repository.User;
 import com.hars.ArtistRegistry.Repository.UserPrincipal;
@@ -65,6 +68,14 @@ public class WebSecurityConfig{
 			.authorizeHttpRequests(auth -> auth
 					.dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.INCLUDE, DispatcherType.ERROR).permitAll()
 					.requestMatchers("/login",
+							"/api/artists/me",
+							"/",
+							"/api/artists/topArtists",
+							"/search",
+							"/api/artists/search",
+							"/library",
+							"artist-details",
+							"/api/artists/genre/**",
 							"/WEB_INF/jsp/**",
 							"/register",
 							"/api/artists/user",
@@ -96,7 +107,9 @@ public class WebSecurityConfig{
 		    .sessionManagement(session -> session
 		        .sessionFixation(sessionFixation -> sessionFixation.newSession()) 
 		    )
-			.httpBasic(Customizer.withDefaults());
+		    .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor(
+		            new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
+		            PathPatternRequestMatcher.withDefaults().matcher("/api/**")));
 		
 		return http.build();
 	}	

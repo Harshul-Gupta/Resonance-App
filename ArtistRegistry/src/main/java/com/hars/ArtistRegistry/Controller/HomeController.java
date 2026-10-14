@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -72,6 +74,14 @@ public class HomeController {
             										 @RequestParam(required = false) String genre,
             										 @RequestParam(defaultValue = "0") int page) {	
 		return ResponseEntity.ok(searchService.searchArtists(name, genre, page));
+	}
+	
+	@GetMapping("/me")
+	public ResponseEntity<Map<String, String>> me(Authentication auth) {
+	    if (auth == null || auth instanceof AnonymousAuthenticationToken || !auth.isAuthenticated()) {
+	        return ResponseEntity.noContent().build(); // 204: signed out, no error noise
+	    }
+	    return ResponseEntity.ok(Map.of("username", auth.getName()));
 	}
 	
 	@PostMapping("/user")

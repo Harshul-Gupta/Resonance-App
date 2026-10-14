@@ -8,7 +8,7 @@ spring:
           globalcors:
             cors-configurations:
               '[/**]':
-                 allowedOrigins: "${FRONTEND_URL:http://localhost:8082}"
+                 allowedOrigins: "${FRONTEND_URL:http://localhost:8083}"
                  allowedMethods: "*"
                  allowedHeaders: "*"
                  allow-credentials: false
@@ -24,15 +24,19 @@ spring:
             - id: discovery-server
               uri: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/} 
               predicates:
-              - Path=/eureka/web
+                - Path=/eureka/web
               filters:
-              - SetPath=/
+                - SetPath=/
+            - id: landing
+              uri: ${LANDING_URL:http://localhost:5173}
+              predicates:
+                - Path=/,/landing-assets/**
             - id: Frontend
               uri: lb://ArtistRegistry
               predicates:
                 - Path=/**
               filters:
-              - PreserveHostHeader
+                - PreserveHostHeader
           x-forwarded:
             enabled: true
               
@@ -46,4 +50,4 @@ eureka:
 logging:
   level:
     root: INFO
-    org.springframework.cloud.gateway: TRACE
+    org.springframework.cloud.gateway: INFO
