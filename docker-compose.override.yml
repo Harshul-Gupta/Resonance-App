@@ -1,0 +1,9 @@
+services:
+  postgres:
+    ports: ["5433:5432"]
+  kafka:
+    ports: ["9092:9092", "29092:29092"]
+  discovery-server:
+    ports: ["8761:8761"]
+  artist-registry:
+    ports: ["8083:8083"]

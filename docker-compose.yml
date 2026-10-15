@@ -1,0 +1,97 @@
+
+services:
+  postgres:
+   image: postgres:16-alpine
+   container_name: resonance-postgres
+   restart: always
+   environment:
+    POSTGRES_USER: ${POSTGRES_USER}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    POSTGRES_DB: ${POSTGRES_DB}
+   ports:
+     - "5433:5432"
+   volumes:
+     - postgres_data:/var/lib/postgresql/data
+   healthcheck:
+     test: ["CMD-SHELL", "pg_isready -U postgres"]
+     interval: 5s
+     timeout: 5s
+     retries: 3
+
+  kafka:
+   image: apache/kafka:latest
+   container_name: resonance-kafka
+   restart: unless-stopped
+   environment:
+    KAFKA_NODE_ID: 1
+    KAFKA_PROCESS_ROLES: broker,controller
+    KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29092
+    KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+    KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+    KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+    KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+  discovery-server:
+    image: ${HUB_REPO}:discovery-server
+    build: ./Discovery-Server
+    container_name: resonance-discovery-server
+    restart: unless-stopped
+
+  api-gateway:
+    build: ./API-Gateway
+    image: ${HUB_REPO}:api-gateway
+    container_name: resonance-api-gateway
+    restart: unless-stopped
+    ports: 
+      - "8080:8080"
+    environment: 
+      - EUREKA_SERVER_URL=http://discovery-server:8761/eureka/
+      - LANDING_URL=${LANDING_URL}
+    depends_on:
+      - discovery-server
+
+  artist-registry:
+    build: ./ArtistRegistry
+    iamge: ${HUB_REPO}:artist-registry
+    container_name: resonance-artst-registry
+    restart: unless-stopped
+    environment:
+      - EUREKA_SERVER_URL=http://discovery-server:8761/eureka/
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - SPRING_PROFILES_ACTIVE=prod
+    depends_on:
+      - discovery-server
+      - kafka
+
+  song-service:
+    build: ./song-Service
+    image: ${HUB_REPO}:song-service
+    container_name: resonance-song-service
+    restart: unless-stopped
+    environment:
+      - EUREKA_SERVER_URL=http://discovery-server:8761/eureka/
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    depends_on:
+      - discovery-server
+      - kafka
+      - postgres
+
+  landing:
+    image: ${HUB_REPO}:landing
+    build: ./landing
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
