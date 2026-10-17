@@ -56,7 +56,7 @@ services:
 
   artist-registry:
     build: ./ArtistRegistry
-    iamge: ${HUB_REPO}:artist-registry
+    image: ${HUB_REPO}:artist-registry
     container_name: resonance-artst-registry
     restart: unless-stopped
     environment:
