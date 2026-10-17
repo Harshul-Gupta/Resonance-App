@@ -15,7 +15,7 @@ concurrency:
 jobs:
   build-and-push:
     name: BUILD ${{ matrix.service }}
-    runs-on: ubantu-latest
+    runs-on: ubuntu-latest
     strategy: 
       fail-fast: true
       matrix:
@@ -40,16 +40,16 @@ jobs:
         with:
           context: ./${{ matrix.dir }}
           push: true  # To push the image to DockerHub
-          tags: 
+          tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/resonance:${{ matrix.service }}
-            ${{ secrets.DOCKERHUB_USEERNAME }}/resonance:${{ matrix.service }}-${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/resonance:${{ matrix.service }}-${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
   deploy:
     name: Deploy to EC2
     needs: build-and-push
-    runs-on: ubantu-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -78,7 +78,7 @@ jobs:
             
             # Fail the workflow if app doesn't come up
             for i in $(seq 1 36); do
-              if curl -fsS -o /dev/null "http://localhost:8080/api/artiststopArtists?pageNumber=0";then  # Fail silently and discard JSON
+              if curl -fsS -o /dev/null "http://localhost:8080/api/artists/topArtists?pageNumber=0";then  # Fail silently and discard JSON
                 echo "Resonance is up"
                 exit 0
               fi
