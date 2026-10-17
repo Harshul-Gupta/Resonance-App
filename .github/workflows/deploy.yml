@@ -1,0 +1,89 @@
+name: deploy-on-push
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:  #Ignore CI/CD if I just change my ReadMe
+      - "**.md"
+  workflow_dispatch:  #Gives me a button to run my CI/CD workflow
+
+concurrency:
+  group: deploy-resonance
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    name: BUILD ${{ matrix.service }}
+    runs-on: ubantu-latest
+    strategy: 
+      fail-fast: true
+      matrix:
+        include:
+          - { service: discovery-server, dir: Discovery-Server }
+          - { service: api-gateway,      dir: API-Gateway }
+          - { service: artist-registry,  dir: ArtistRegistry }
+          - { service: song-service,     dir: song-Service }
+          - { service: landing,          dir: landing } 
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Docker Login
+        uses: docker/login-action@v3
+        with: 
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Docker image builder
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.dir }}
+          push: true  # To push the image to DockerHub
+          tags: 
+            ${{ secrets.DOCKERHUB_USERNAME }}/resonance:${{ matrix.service }}
+            ${{ secrets.DOCKERHUB_USEERNAME }}/resonance:${{ matrix.service }}-${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+		  
+  deploy:
+    name: Deploy to EC2
+    needs: build-and-push
+    runs-on: ubantu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Copy docker-compose to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          source: docker-compose.yml
+          target: ${{ secrets.EC2_APP_DIR }}
+
+      - name: Pull, restart and Verify
+        uses: appleboy/ssh-action@v1.0.3
+        with: 
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script_stop: true
+          script: |
+            cd ${{ secrets.EC2_APP_DIR }}
+            docker compose pull
+            docker compose up -d --remove-orphans --no-build
+            docker image  prune -f
+            docker compose ps 
+            
+            # Fail the workflow if app doesn't come up
+            for i in $(seq 1 36); do
+              if curl -fsS -o /dev/null "http://localhost:8080/api/artiststopArtists?pageNumber=0";then  # Fail silently and discard JSON
+                echo "Resonance is up"
+                exit 0
+              fi
+              sleep 5
+            done
+            echo "Resonance did not become heathy in 3 minutes"
+            docker compose logs --tail=60 api-gateway artist-registry
+            exit 1
