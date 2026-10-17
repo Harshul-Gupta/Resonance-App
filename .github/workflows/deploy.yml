@@ -86,10 +86,10 @@ jobs:
           script_stop: true
           script: |
             cd ${{ secrets.EC2_APP_DIR }}
-            docker compose pull
-            docker compose up -d --remove-orphans --no-build
+            docker-compose pull
+            docker-compose up -d --remove-orphans --no-build
             docker image  prune -f
-            docker compose ps 
+            docker-compose ps 
             
             # Fail the workflow if app doesn't come up
             for i in $(seq 1 36); do
@@ -100,11 +100,11 @@ jobs:
               sleep 5
             done
             echo "Resonance did not become heathy in 3 minutes"
-            docker compose logs --tail=60 api-gateway artist-registry
+            docker-compose logs --tail=60 api-gateway artist-registry
             exit 1
       - name: Close Port 22 again
         if: always()
         run: |
           aws ec2 revoke-security-group-ingress \
-            --group-id ${{ secrets.EC2_SG_ID }}
+            --group-id ${{ secrets.EC2_SG_ID }} \
             --protocol tcp --port 22 --cidr ${{ steps.sg.outputs.ip }}/32
