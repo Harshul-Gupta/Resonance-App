@@ -45,7 +45,7 @@ jobs:
             ${{ secrets.DOCKERHUB_USEERNAME }}/resonance:${{ matrix.service }}-${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
-		  
+
   deploy:
     name: Deploy to EC2
     needs: build-and-push
