@@ -53,6 +53,21 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with: 
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Allow this runnner's IP on Port 22
+        id: sg
+        run: |
+          IP=${{ curl -s https://checkip.amazonaws.com }}
+          echo "ip=$IP" >> "$GITHUB_OUTPUT"
+          aws ec2 authorize-security-group-ingress \
+            --group-id ${{ secrets.EC@_SG_ID }}
+            --protocol tcp --port 22 --cidr "$IP/32"
+          sleep 5
       - name: Copy docker-compose to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -87,3 +102,9 @@ jobs:
             echo "Resonance did not become heathy in 3 minutes"
             docker compose logs --tail=60 api-gateway artist-registry
             exit 1
+      - name: Close Port 22 again
+        if: always()
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id ${{ secrets.EC2_SG_ID }}
+            --protocol tcp --port 22 --cidr ${{ steps.sg.outputs.ip }}/32
