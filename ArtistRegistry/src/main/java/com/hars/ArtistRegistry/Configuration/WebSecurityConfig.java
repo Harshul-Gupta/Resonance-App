@@ -74,7 +74,7 @@ public class WebSecurityConfig{
 							"/search",
 							"/api/artists/search",
 							"/library",
-							"artist-details",
+							"/artist-details",
 							"/api/artists/genre/**",
 							"/WEB_INF/jsp/**",
 							"/register",
