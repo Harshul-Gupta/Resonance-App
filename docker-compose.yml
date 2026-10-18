@@ -69,6 +69,8 @@ services:
       - MONGO_URI=${MONGO_URI}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - RAPID_URL=${RAPID_URL}
+      - RAPID_KEY=${RAPID_KEY}
     depends_on:
       - discovery-server
       - kafka
@@ -88,8 +90,6 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - RAPID_URL=${RAPID_URL}
-      - RAPID_KEY=${RAPID_KEY}
     depends_on:
       - discovery-server
       - kafka
