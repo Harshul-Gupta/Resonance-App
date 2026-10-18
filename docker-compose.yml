@@ -65,6 +65,10 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - SPRING_PROFILES_ACTIVE=prod
+      - AWS_REGION=${AWS_REGION}
+      - MONGO_URI=${MONGO_URI}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
     depends_on:
       - discovery-server
       - kafka
@@ -76,6 +80,7 @@ services:
     restart: unless-stopped
     environment:
       - EUREKA_SERVER_URL=http://discovery-server:8761/eureka/
+      - POSTGRES_DB=songdb
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=${POSTGRES_USER}
